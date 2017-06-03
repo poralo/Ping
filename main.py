@@ -2,6 +2,7 @@ import pygame as py
 from sys import exit
 from settings import *
 from tile import Grid
+from widgets import TextBox
 
 
 class Game:
@@ -17,15 +18,15 @@ class Game:
 
     def load_data(self):
         self.tile_sprites = py.sprite.Group()
+        self.ui_sprites = py.sprite.Group()
 
         self.grid = Grid(self, LEVELS[self.level_number])
+        self.textbox = TextBox(self, (10, 10))
 
     def new(self):
         self.running = True
         self.level_number = 0
-
         self.load_data()
-
 
     def quit(self):
         self.running = False
@@ -41,6 +42,7 @@ class Game:
 
     def update(self):
         py.display.set_caption(TITLE + " - FPS : {:.3}".format(self.clock.get_fps()))
+        self.textbox.set_text("Level : {}".format(self.level_number))
         self.grid.update()
 
         if self.grid.is_completed():
@@ -54,10 +56,13 @@ class Game:
                 self.new()
             self.grid.change = False
 
+        self.ui_sprites.update()
+
     def draw(self):
         self.screen.fill(BLUE)
 
         self.grid.draw(self.screen)
+        self.ui_sprites.draw(self.screen)
 
     def run(self):
         while self.running:
