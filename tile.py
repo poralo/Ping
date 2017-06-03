@@ -1,6 +1,6 @@
 import pygame as py
+from level_interaction import load_level
 from settings import *
-from levels.level_creator import load_level
 
 
 class Tile(py.sprite.Sprite):
@@ -47,8 +47,9 @@ class Grid:
         self.surface = py.Surface((w, h))
         self.surface.fill(GREEN)
 
-        self.x = WIDTH / 2 - self.width / 2 * TILE_SIZE
-        self.y = HEIGHT / 2 - self.height / 2 * TILE_SIZE
+        mid = self.surface.get_rect().center
+        self.x = WIDTH / 2 - mid[0]
+        self.y = HEIGHT / 2 - mid[1]
 
         self.create_grid()
         self.change = True
@@ -67,7 +68,7 @@ class Grid:
         return tiles
 
     def clicked(self):
-        if not py.mouse.get_pressed()[0]:
+        if not py.mouse.get_pressed()[0] and not py.mouse.get_pressed()[2]:
             self.change = True
 
         mx, my = py.mouse.get_pos()
@@ -75,9 +76,14 @@ class Grid:
             if tile.rect.collidepoint((mx, my)):
                 if py.mouse.get_pressed()[0] & self.change:
                     self.change = False
+                    self.game.try_number += 1
 
                     for t in self.neighbour_tiles(tile):
                         t.change_state()
+
+                elif py.mouse.get_pressed()[2] & self.change & DEBUG:
+                    self.change = False
+                    tile.change_state()
 
     def create_grid(self):
         for y in range(len(self.level)):
