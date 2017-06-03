@@ -1,24 +1,24 @@
 import pygame as py
 from settings import *
+from levels.level_creator import load_level
 
 
 class Tile(py.sprite.Sprite):
     """A Tile which we can change is color"""
-    SIZE = 100
-    GROUP = py.sprite.Group()
+    def __init__(self, game, state, pos):
+        self.group = game.tile_sprites
+        py.sprite.Sprite.__init__(self, self.group)
+        self.game = game
 
-    def __init__(self, pos):
-        py.sprite.Sprite.__init__(self, Tile.GROUP)
-
-        self.image = py.Surface((Tile.SIZE, Tile.SIZE))
+        self.image = py.Surface((TILE_SIZE, TILE_SIZE))
         self.rect = self.image.get_rect()
 
         self.pos = pos
         x, y = pos
-        self.rect.x = x * Tile.SIZE + PADDLE * (x + 1)
-        self.rect.y = y * Tile.SIZE + PADDLE * (y + 1)
+        self.rect.x = x * TILE_SIZE + PADDLE * (x + 1)
+        self.rect.y = y * TILE_SIZE + PADDLE * (y + 1)
 
-        self.state = 0
+        self.state = state
 
     def get_pos(self):
         return self.pos
@@ -35,20 +35,23 @@ class Tile(py.sprite.Sprite):
 
 class Grid:
     """A grid which in containing Tile"""
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
+    def __init__(self, game, level_name):
+        self.level = load_level(level_name)
+        self.width = len(self.level[0])
+        self.height = len(self.level)
 
-        w = width * Tile.SIZE + PADDLE * (width + 1)
-        h = height * Tile.SIZE + PADDLE * (height + 1)
+        self.game = game
+
+        w = self.width * TILE_SIZE + PADDLE * (self.width + 1)
+        h = self.height * TILE_SIZE + PADDLE * (self.height + 1)
         self.surface = py.Surface((w, h))
         self.surface.fill(GREEN)
 
+        self.x = WIDTH / 2 - self.width / 2 * TILE_SIZE
+        self.y = HEIGHT / 2 - self.height / 2 * TILE_SIZE
+
         self.create_grid()
         self.change = True
-
-        self.x = 0
-        self.y = 0
 
     def neighbour_tiles(self, target):
         tiles = []
@@ -57,7 +60,7 @@ class Grid:
             for y in range(target.pos[1] - 1, target.pos[1] + 2):
                 if (x, y) != target.pos and 0 <= x <= self.width and 0 <= y <= self.height:
                     neighbours.append((x, y))
-        for tile in Tile.GROUP:
+        for tile in self.game.tile_sprites:
             if tile.pos in neighbours:
                 tiles.append(tile)
 
@@ -68,7 +71,7 @@ class Grid:
             self.change = True
 
         mx, my = py.mouse.get_pos()
-        for tile in Tile.GROUP:
+        for tile in self.game.tile_sprites:
             if tile.rect.collidepoint((mx, my)):
                 if py.mouse.get_pressed()[0] & self.change:
                     self.change = False
@@ -77,15 +80,26 @@ class Grid:
                         t.change_state()
 
     def create_grid(self):
-        for y in range(self.height):
-            for x in range(self.width):
-                Tile((x, y))
+        for y in range(len(self.level)):
+            for x in range(len(self.level[0])):
+                tile = Tile(self.game, self.level[y][x], (x, y))
+                tile.rect.x += self.x
+                tile.rect.y += self.y
+
+    def is_completed(self):
+        """Check if the grid is all gold: return bool"""
+        completed = 0
+        for tile in self.game.tile_sprites:
+            if tile.state:
+                completed += 1
+        all_completed = len(self.level) * len(self.level[0])
+        return completed == all_completed
 
     def update(self):
         self.clicked()
-
-        Tile.GROUP.update()
-        Tile.GROUP.draw(self.surface)
+        self.game.tile_sprites.update()
 
     def draw(self, surface):
         surface.blit(self.surface, (self.x, self.y))
+        self.game.tile_sprites.draw(self.game.screen)
+

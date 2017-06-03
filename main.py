@@ -1,7 +1,7 @@
 import pygame as py
 from sys import exit
 from settings import *
-from tile import Tile, Grid
+from tile import Grid
 
 
 class Game:
@@ -12,12 +12,20 @@ class Game:
         py.display.set_caption(TITLE)
 
         self.clock = py.time.Clock()
+
+        self.new()
+
+    def load_data(self):
+        self.tile_sprites = py.sprite.Group()
+
+        self.grid = Grid(self, LEVELS[self.level_number])
+
+    def new(self):
         self.running = True
+        self.level_number = 0
 
         self.load_data()
 
-    def load_data(self):
-        self.grid = Grid(GRID_WIDTH, GRID_HEIGHT)
 
     def quit(self):
         self.running = False
@@ -34,6 +42,17 @@ class Game:
     def update(self):
         py.display.set_caption(TITLE + " - FPS : {:.3}".format(self.clock.get_fps()))
         self.grid.update()
+
+        if self.grid.is_completed():
+            self.tile_sprites.empty()
+            self.level_number += 1
+            keys = LEVELS.keys()
+            if self.level_number in keys:
+                self.grid = Grid(self, LEVELS[self.level_number])
+            else:
+                print("You've finished the game!")
+                self.new()
+            self.grid.change = False
 
     def draw(self):
         self.screen.fill(BLUE)
